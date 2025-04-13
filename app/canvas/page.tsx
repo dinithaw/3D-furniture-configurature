@@ -177,7 +177,7 @@ export default function Canvas2DPage() {
       />
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-2">2D Canvas Designer</h1>
+        <h1 className="text-3xl font-bold mb-2">2D Designer</h1>
         <p className="text-gray-600 mb-8">Create a 2D layout of your furniture design</p>
 
         <div className="flex flex-col lg:flex-row gap-8">

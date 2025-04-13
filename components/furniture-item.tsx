@@ -1,9 +1,15 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { useFrame } from "@react-three/fiber"
-import { PivotControls } from "@react-three/drei"
+import { PivotControls, useGLTF } from "@react-three/drei"
 import * as THREE from "three"
+
+// Preload models with correct paths
+useGLTF.preload("/models/sofa.glb")
+useGLTF.preload("/models/table.glb")
+useGLTF.preload("/models/chair.glb")
+useGLTF.preload("/models/lamp.glb")
 
 interface FurnitureItemProps {
   item: {
@@ -23,12 +29,44 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
   const ref = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
 
-  // Create a material with the item's color
-  const material = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(item.color),
-    roughness: 0.7,
-    metalness: 0.2,
+  // Create a fallback for when models are loading or if there's an error
+  const [modelError, setModelError] = useState(false)
+
+  // Load the appropriate model based on item type
+  const { scene: modelScene, error } = useGLTF(`/models/${item.type}.glb`, undefined, undefined, (error) => {
+    console.error(`Error loading model: ${error}`)
+    setModelError(true)
   })
+
+  // Create a clone of the model to avoid modifying the original
+  const [model, setModel] = useState<THREE.Group | null>(null)
+
+  useEffect(() => {
+    if (modelScene && !error) {
+      try {
+        // Clone the model scene
+        const clonedModel = modelScene.clone(true)
+
+        // Apply the color to all meshes in the model
+        clonedModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            // Create a new material with the item's color
+            child.material = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(item.color),
+              roughness: 0.7,
+              metalness: 0.2,
+            })
+          }
+        })
+
+        setModel(clonedModel)
+        setModelError(false)
+      } catch (err) {
+        console.error("Error processing model:", err)
+        setModelError(true)
+      }
+    }
+  }, [modelScene, item.color, error])
 
   // Apply the item's scale to the model scale
   const modelScale: [number, number, number] = item.scale
@@ -39,8 +77,8 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
     }
   })
 
-  // Function to create furniture models based on type
-  const renderFurnitureModel = () => {
+  // Function to create fallback furniture models based on type
+  const renderFallbackModel = () => {
     switch (item.type) {
       case "sofa":
         return (
@@ -48,86 +86,29 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
             {/* Sofa base/frame */}
             <mesh castShadow receiveShadow position={[0, 0.25, 0]}>
               <boxGeometry args={[2.2, 0.5, 0.9]} />
-              <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
             </mesh>
 
             {/* Sofa back */}
             <mesh castShadow receiveShadow position={[0, 0.7, -0.35]}>
               <boxGeometry args={[2.2, 0.9, 0.2]} />
-              <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0, -0.05)} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.05)} />
             </mesh>
 
-            {/* Sofa arms - more rounded with bevels */}
-            <group position={[1.05, 0.5, 0]}>
-              <mesh castShadow receiveShadow position={[0, 0, 0]}>
-                <boxGeometry args={[0.15, 0.5, 0.8]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0, -0.05)} />
-              </mesh>
-              {/* Arm top padding */}
-              <mesh castShadow receiveShadow position={[0, 0.25, 0]}>
-                <boxGeometry args={[0.2, 0.1, 0.85]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0.05, 0.05)} />
-              </mesh>
-            </group>
-
-            <group position={[-1.05, 0.5, 0]}>
-              <mesh castShadow receiveShadow position={[0, 0, 0]}>
-                <boxGeometry args={[0.15, 0.5, 0.8]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0, -0.05)} />
-              </mesh>
-              {/* Arm top padding */}
-              <mesh castShadow receiveShadow position={[0, 0.25, 0]}>
-                <boxGeometry args={[0.2, 0.1, 0.85]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0.05, 0.05)} />
-              </mesh>
-            </group>
-
-            {/* Sofa cushions with more detail */}
-            <group position={[0, 0.4, 0.05]}>
-              {/* Left cushion */}
-              <mesh castShadow receiveShadow position={[-0.55, 0, 0]}>
-                <boxGeometry args={[0.9, 0.3, 0.7]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0.05, 0.05)} />
-              </mesh>
-              {/* Right cushion */}
-              <mesh castShadow receiveShadow position={[0.55, 0, 0]}>
-                <boxGeometry args={[0.9, 0.3, 0.7]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0.05, 0.05)} />
-              </mesh>
-
-              {/* Cushion details - seams and indentations */}
-              <mesh castShadow receiveShadow position={[0, 0, 0]}>
-                <boxGeometry args={[0.05, 0.25, 0.65]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-              </mesh>
-
-              {/* Back cushions */}
-              <mesh castShadow receiveShadow position={[-0.55, 0.3, -0.2]}>
-                <boxGeometry args={[0.8, 0.3, 0.3]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0.05, 0.05)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0.55, 0.3, -0.2]}>
-                <boxGeometry args={[0.8, 0.3, 0.3]} />
-                <meshStandardMaterial {...material} color={new THREE.Color(item.color).offsetHSL(0, 0.05, 0.05)} />
-              </mesh>
-            </group>
-
-            {/* Sofa legs */}
-            <mesh castShadow receiveShadow position={[0.9, -0.2, 0.3]}>
-              <cylinderGeometry args={[0.04, 0.04, 0.2, 8]} />
-              <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
+            {/* Sofa arms */}
+            <mesh castShadow receiveShadow position={[1.05, 0.5, 0]}>
+              <boxGeometry args={[0.15, 0.5, 0.8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.05)} />
             </mesh>
-            <mesh castShadow receiveShadow position={[-0.9, -0.2, 0.3]}>
-              <cylinderGeometry args={[0.04, 0.04, 0.2, 8]} />
-              <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
+            <mesh castShadow receiveShadow position={[-1.05, 0.5, 0]}>
+              <boxGeometry args={[0.15, 0.5, 0.8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.05)} />
             </mesh>
-            <mesh castShadow receiveShadow position={[0.9, -0.2, -0.3]}>
-              <cylinderGeometry args={[0.04, 0.04, 0.2, 8]} />
-              <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[-0.9, -0.2, -0.3]}>
-              <cylinderGeometry args={[0.04, 0.04, 0.2, 8]} />
-              <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
+
+            {/* Sofa cushions */}
+            <mesh castShadow receiveShadow position={[0, 0.4, 0.05]}>
+              <boxGeometry args={[2.0, 0.3, 0.7]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0.05, 0.05)} />
             </mesh>
           </group>
         )
@@ -135,85 +116,28 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
       case "table":
         return (
           <group>
-            {/* Table top with beveled edges */}
+            {/* Table top */}
             <mesh castShadow receiveShadow position={[0, 0.4, 0]}>
               <boxGeometry args={[1.6, 0.08, 0.9]} />
-              <meshStandardMaterial {...material} color={new THREE.Color(item.color)} roughness={0.4} metalness={0.1} />
+              <meshStandardMaterial color={item.color} />
             </mesh>
 
-            {/* Table edge trim */}
-            <mesh castShadow receiveShadow position={[0, 0.36, 0]}>
-              <boxGeometry args={[1.65, 0.02, 0.95]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.15)} />
-            </mesh>
-
-            {/* Table frame under top */}
-            <mesh castShadow receiveShadow position={[0, 0.32, 0]}>
-              <boxGeometry args={[1.5, 0.04, 0.8]} />
+            {/* Table legs */}
+            <mesh castShadow receiveShadow position={[0.7, 0.2, 0.35]}>
+              <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
               <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
-
-            {/* Table legs - more detailed with connection structure */}
-            <group>
-              {/* Leg connectors */}
-              <mesh castShadow receiveShadow position={[0, 0.2, 0]}>
-                <boxGeometry args={[1.4, 0.04, 0.04]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0, 0.2, 0.7]}>
-                <boxGeometry args={[1.4, 0.04, 0.04]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0, 0.2, -0.7]}>
-                <boxGeometry args={[1.4, 0.04, 0.04]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
-              </mesh>
-
-              {/* Cross supports */}
-              <mesh castShadow receiveShadow position={[0.65, 0.2, 0]}>
-                <boxGeometry args={[0.04, 0.04, 1.4]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[-0.65, 0.2, 0]}>
-                <boxGeometry args={[0.04, 0.04, 1.4]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
-              </mesh>
-            </group>
-
-            {/* Table legs - tapered design */}
-            <mesh castShadow receiveShadow position={[0.65, 0.1, 0.35]}>
-              <cylinderGeometry args={[0.03, 0.04, 0.4, 8]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
+            <mesh castShadow receiveShadow position={[-0.7, 0.2, 0.35]}>
+              <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
-            <mesh castShadow receiveShadow position={[-0.65, 0.1, 0.35]}>
-              <cylinderGeometry args={[0.03, 0.04, 0.4, 8]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
+            <mesh castShadow receiveShadow position={[0.7, 0.2, -0.35]}>
+              <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
-            <mesh castShadow receiveShadow position={[0.65, 0.1, -0.35]}>
-              <cylinderGeometry args={[0.03, 0.04, 0.4, 8]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[-0.65, 0.1, -0.35]}>
-              <cylinderGeometry args={[0.03, 0.04, 0.4, 8]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-            </mesh>
-
-            {/* Leg feet */}
-            <mesh castShadow receiveShadow position={[0.65, -0.1, 0.35]}>
-              <sphereGeometry args={[0.04, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[-0.65, -0.1, 0.35]}>
-              <sphereGeometry args={[0.04, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[0.65, -0.1, -0.35]}>
-              <sphereGeometry args={[0.04, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[-0.65, -0.1, -0.35]}>
-              <sphereGeometry args={[0.04, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
+            <mesh castShadow receiveShadow position={[-0.7, 0.2, -0.35]}>
+              <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
           </group>
         )
@@ -221,189 +145,63 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
       case "lamp":
         return (
           <group>
-            {/* Lamp base - more detailed with layered design */}
-            <mesh castShadow receiveShadow position={[0, 0.03, 0]}>
-              <cylinderGeometry args={[0.25, 0.3, 0.06, 16]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[0, 0.07, 0]}>
-              <cylinderGeometry args={[0.2, 0.25, 0.04, 16]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[0, 0.1, 0]}>
-              <cylinderGeometry args={[0.15, 0.2, 0.03, 16]} />
-              <meshStandardMaterial {...material} />
+            {/* Lamp base */}
+            <mesh castShadow receiveShadow position={[0, 0.05, 0]}>
+              <cylinderGeometry args={[0.2, 0.3, 0.1, 16]} />
+              <meshStandardMaterial color={item.color} />
             </mesh>
 
-            {/* Lamp neck with joint */}
-            <mesh castShadow receiveShadow position={[0, 0.2, 0]}>
-              <sphereGeometry args={[0.06, 16, 16]} />
-              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-            </mesh>
-
-            {/* Lamp pole - slightly curved */}
+            {/* Lamp pole */}
             <mesh castShadow receiveShadow position={[0, 0.6, 0]}>
-              <cylinderGeometry args={[0.02, 0.03, 0.8, 8]} />
-              <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
+              <cylinderGeometry args={[0.02, 0.02, 1, 8]} />
+              <meshStandardMaterial color="#444" />
             </mesh>
 
-            {/* Lamp head connection */}
-            <mesh castShadow receiveShadow position={[0, 1.05, 0]}>
-              <sphereGeometry args={[0.04, 16, 16]} />
-              <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
+            {/* Lamp shade */}
+            <mesh castShadow receiveShadow position={[0, 1.2, 0]}>
+              <coneGeometry args={[0.2, 0.3, 16, 1, true]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, 0.1)} side={THREE.DoubleSide} />
             </mesh>
 
-            {/* Lamp shade support */}
-            <mesh castShadow receiveShadow position={[0, 1.15, 0]}>
-              <cylinderGeometry args={[0.1, 0.04, 0.05, 16]} />
-              <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
-            </mesh>
-
-            {/* Lamp shade - more realistic with thickness */}
-            <group position={[0, 1.25, 0]}>
-              <mesh castShadow receiveShadow>
-                <coneGeometry args={[0.25, 0.4, 32, 1, true]} />
-                <meshStandardMaterial
-                  color={new THREE.Color(item.color).offsetHSL(0, 0, 0.1)}
-                  side={THREE.DoubleSide}
-                  transparent
-                  opacity={0.9}
-                />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0, -0.01, 0]}>
-                <ringGeometry args={[0.23, 0.25, 32]} />
-                <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0, -0.4, 0]}>
-                <ringGeometry args={[0.08, 0.1, 32]} />
-                <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
-              </mesh>
-            </group>
-
-            {/* Light bulb (emissive) */}
+            {/* Light bulb */}
             <mesh position={[0, 1.1, 0]}>
-              <sphereGeometry args={[0.08, 16, 16]} />
-              <meshStandardMaterial color="white" emissive="yellow" emissiveIntensity={0.8} />
+              <sphereGeometry args={[0.05, 16, 16]} />
+              <meshStandardMaterial color="white" emissive="yellow" emissiveIntensity={0.5} />
             </mesh>
-
-            {/* Light effect */}
-            <pointLight position={[0, 1.1, 0]} intensity={0.8} distance={4} color="yellow" />
           </group>
         )
 
       case "chair":
         return (
           <group>
-            {/* Chair seat with cushion */}
+            {/* Chair seat */}
             <mesh castShadow receiveShadow position={[0, 0.25, 0]}>
               <boxGeometry args={[0.5, 0.08, 0.5]} />
+              <meshStandardMaterial color={item.color} />
+            </mesh>
+
+            {/* Chair back */}
+            <mesh castShadow receiveShadow position={[0, 0.6, -0.22]}>
+              <boxGeometry args={[0.5, 0.7, 0.04]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
+            </mesh>
+
+            {/* Chair legs */}
+            <mesh castShadow receiveShadow position={[0.2, 0.12, 0.2]}>
+              <cylinderGeometry args={[0.02, 0.02, 0.25, 8]} />
               <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
-            <mesh castShadow receiveShadow position={[0, 0.31, 0]}>
-              <boxGeometry args={[0.48, 0.06, 0.48]} />
-              <meshStandardMaterial {...material} />
+            <mesh castShadow receiveShadow position={[-0.2, 0.12, 0.2]}>
+              <cylinderGeometry args={[0.02, 0.02, 0.25, 8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
-
-            {/* Chair back with slats */}
-            <group position={[0, 0.6, -0.22]}>
-              {/* Back frame */}
-              <mesh castShadow receiveShadow position={[0, 0, 0]}>
-                <boxGeometry args={[0.5, 0.7, 0.04]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
-              </mesh>
-
-              {/* Back slats */}
-              <mesh castShadow receiveShadow position={[0, 0, 0.02]}>
-                <boxGeometry args={[0.46, 0.66, 0.02]} />
-                <meshStandardMaterial {...material} />
-              </mesh>
-
-              {/* Vertical slats */}
-              <mesh castShadow receiveShadow position={[-0.15, 0, 0.03]}>
-                <boxGeometry args={[0.03, 0.66, 0.02]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0, 0, 0.03]}>
-                <boxGeometry args={[0.03, 0.66, 0.02]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0.15, 0, 0.03]}>
-                <boxGeometry args={[0.03, 0.66, 0.02]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-              </mesh>
-
-              {/* Horizontal slats */}
-              <mesh castShadow receiveShadow position={[0, 0.2, 0.03]}>
-                <boxGeometry args={[0.46, 0.03, 0.02]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0, -0.2, 0.03]}>
-                <boxGeometry args={[0.46, 0.03, 0.02]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.1)} />
-              </mesh>
-            </group>
-
-            {/* Chair legs with more detail */}
-            <group>
-              {/* Front legs */}
-              <mesh castShadow receiveShadow position={[0.2, 0.1, 0.2]}>
-                <cylinderGeometry args={[0.025, 0.03, 0.3, 8]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[-0.2, 0.1, 0.2]}>
-                <cylinderGeometry args={[0.025, 0.03, 0.3, 8]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-              </mesh>
-
-              {/* Back legs - taller and angled */}
-              <group position={[0.2, 0.3, -0.2]} rotation={[0.2, 0, 0]}>
-                <mesh castShadow receiveShadow position={[0, -0.2, 0]}>
-                  <cylinderGeometry args={[0.025, 0.03, 0.7, 8]} />
-                  <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-                </mesh>
-              </group>
-              <group position={[-0.2, 0.3, -0.2]} rotation={[0.2, 0, 0]}>
-                <mesh castShadow receiveShadow position={[0, -0.2, 0]}>
-                  <cylinderGeometry args={[0.025, 0.03, 0.7, 8]} />
-                  <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-                </mesh>
-              </group>
-
-              {/* Support bars */}
-              <mesh castShadow receiveShadow position={[0, 0, 0.2]} rotation={[0, Math.PI / 2, 0]}>
-                <cylinderGeometry args={[0.015, 0.015, 0.4, 8]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0, 0, -0.2]} rotation={[0, Math.PI / 2, 0]}>
-                <cylinderGeometry args={[0.015, 0.015, 0.4, 8]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[0.2, 0, 0]} rotation={[0, 0, 0]}>
-                <cylinderGeometry args={[0.015, 0.015, 0.4, 8]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-              </mesh>
-              <mesh castShadow receiveShadow position={[-0.2, 0, 0]} rotation={[0, 0, 0]}>
-                <cylinderGeometry args={[0.015, 0.015, 0.4, 8]} />
-                <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.3)} />
-              </mesh>
-            </group>
-
-            {/* Chair feet */}
-            <mesh castShadow receiveShadow position={[0.2, -0.05, 0.2]}>
-              <sphereGeometry args={[0.03, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
+            <mesh castShadow receiveShadow position={[0.2, 0.12, -0.2]}>
+              <cylinderGeometry args={[0.02, 0.02, 0.25, 8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
-            <mesh castShadow receiveShadow position={[-0.2, -0.05, 0.2]}>
-              <sphereGeometry args={[0.03, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[0.2, -0.05, -0.2]}>
-              <sphereGeometry args={[0.03, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[-0.2, -0.05, -0.2]}>
-              <sphereGeometry args={[0.03, 8, 8, 0, Math.PI]} />
-              <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
+            <mesh castShadow receiveShadow position={[-0.2, 0.12, -0.2]}>
+              <cylinderGeometry args={[0.02, 0.02, 0.25, 8]} />
+              <meshStandardMaterial color={new THREE.Color(item.color).offsetHSL(0, 0, -0.2)} />
             </mesh>
           </group>
         )
@@ -412,7 +210,7 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
         return (
           <mesh castShadow receiveShadow>
             <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial {...material} />
+            <meshStandardMaterial color={item.color} />
           </mesh>
         )
     }
@@ -442,7 +240,7 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
             onPointerOver={() => setHovered(true)}
             onPointerOut={() => setHovered(false)}
           >
-            {renderFurnitureModel()}
+            {model && !modelError ? <primitive object={model} /> : renderFallbackModel()}
           </group>
         </PivotControls>
       ) : (
@@ -455,7 +253,7 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
           onPointerOver={() => setHovered(true)}
           onPointerOut={() => setHovered(false)}
         >
-          {renderFurnitureModel()}
+          {model && !modelError ? <primitive object={model} /> : renderFallbackModel()}
         </group>
       )}
 

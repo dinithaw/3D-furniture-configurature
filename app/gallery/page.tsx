@@ -5,12 +5,15 @@ import Navbar from "@/components/navbar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 export default function GalleryPage() {
   const router = useRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userRole, setUserRole] = useState<"user" | "admin" | null>(null)
   const [showLogin, setShowLogin] = useState(false)
+  const [selectedGalleryItem, setSelectedGalleryItem] = useState<any>(null)
+  const [showGalleryDetails, setShowGalleryDetails] = useState(false)
 
   // Move localStorage access to useEffect
   useEffect(() => {
@@ -92,6 +95,11 @@ export default function GalleryPage() {
     },
   ]
 
+  const viewGalleryDetails = (item: any) => {
+    setSelectedGalleryItem(item)
+    setShowGalleryDetails(true)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar
@@ -127,7 +135,7 @@ export default function GalleryPage() {
                 <div className="p-4">
                   <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
                   <p className="text-gray-600 mb-4">{item.description}</p>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => viewGalleryDetails(item)}>
                     View Details
                   </Button>
                 </div>
@@ -152,7 +160,7 @@ export default function GalleryPage() {
                     <div className="p-4">
                       <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
                       <p className="text-gray-600 mb-4">{item.description}</p>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => viewGalleryDetails(item)}>
                         View Details
                       </Button>
                     </div>
@@ -167,6 +175,68 @@ export default function GalleryPage() {
             Create Your Own Design
           </Button>
         </div>
+
+        {/* Gallery Item Details Dialog */}
+        {selectedGalleryItem && (
+          <Dialog open={showGalleryDetails} onOpenChange={setShowGalleryDetails}>
+            <DialogContent className="sm:max-w-[700px]">
+              <DialogHeader>
+                <DialogTitle>{selectedGalleryItem.title}</DialogTitle>
+                <DialogDescription>Design Showcase</DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                <div>
+                  <img
+                    src={selectedGalleryItem.image || "/placeholder.svg"}
+                    alt={selectedGalleryItem.title}
+                    className="w-full rounded-md shadow-md"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <p className="text-gray-700">{selectedGalleryItem.description}</p>
+
+                  <div className="pt-4 border-t mt-4">
+                    <h4 className="font-medium mb-2">Design Elements</h4>
+                    <ul className="text-sm space-y-2">
+                      <li className="flex items-start">
+                        <span className="bg-amber-100 text-amber-800 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5">
+                          1
+                        </span>
+                        <span>Premium materials selected for durability and style</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="bg-amber-100 text-amber-800 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5">
+                          2
+                        </span>
+                        <span>Ergonomic design for maximum comfort</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="bg-amber-100 text-amber-800 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5">
+                          3
+                        </span>
+                        <span>Carefully balanced color palette for visual harmony</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-4 flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowGalleryDetails(false)}>
+                      Close
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        router.push("/")
+                        setShowGalleryDetails(false)
+                      }}
+                    >
+                      Try This Design
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </main>
 
       <footer className="bg-gray-800 text-white py-8">

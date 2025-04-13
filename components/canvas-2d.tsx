@@ -325,6 +325,87 @@ export default function Canvas2D({
     drawCanvas()
   }, [width, height, backgroundColor, furniture, selectedFurnitureId])
 
+  // Add touch event handlers to the canvas
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0]
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      const rect = canvas.getBoundingClientRect()
+      const x = touch.clientX - rect.left
+      const y = touch.clientY - rect.top
+
+      // Check if touched on a furniture item
+      const touchedItem = findClickedItem(x, y)
+
+      if (touchedItem) {
+        onSelectFurniture(touchedItem.id)
+        setIsDragging(true)
+        setDragStartX(x)
+        setDragStartY(y)
+        setDraggedItemInitialX(touchedItem.x)
+        setDraggedItemInitialY(touchedItem.y)
+
+        // Bring the touched item to the front
+        const updatedFurniture = furniture.map((item) => {
+          if (item.id === touchedItem.id) {
+            return { ...item, zIndex: Math.max(...furniture.map((i) => i.zIndex)) + 1 }
+          }
+          return item
+        })
+
+        // This will trigger a re-render with the updated zIndex
+        if (JSON.stringify(updatedFurniture) !== JSON.stringify(furniture)) {
+          // We need to update the parent component's state
+          // This is a bit of a hack since we don't have a direct way to update zIndex
+          const selectedItem = updatedFurniture.find((item) => item.id === touchedItem.id)
+          if (selectedItem) {
+            onMoveFurniture(selectedItem.id, selectedItem.x, selectedItem.y)
+          }
+        }
+      } else {
+        onSelectFurniture(null)
+      }
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0]
+      const canvas = canvasRef.current
+      if (!canvas || !isDragging || !selectedFurnitureId) return
+
+      const rect = canvas.getBoundingClientRect()
+      const x = touch.clientX - rect.left
+      const y = touch.clientY - rect.top
+
+      const dx = x - dragStartX
+      const dy = y - dragStartY
+
+      const newX = Math.max(
+        0,
+        Math.min(
+          width - (furniture.find((item) => item.id === selectedFurnitureId)?.width || 0),
+          draggedItemInitialX + dx,
+        ),
+      )
+      const newY = Math.max(
+        0,
+        Math.min(
+          height - (furniture.find((item) => item.id === selectedFurnitureId)?.height || 0),
+          draggedItemInitialY + dy,
+        ),
+      )
+
+      onMoveFurniture(selectedFurnitureId, newX, newY)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+  }
+
   return (
     <div className="relative flex items-center justify-center p-4 bg-gray-100 min-h-[600px]">
       <canvas
@@ -337,6 +418,9 @@ export default function Canvas2D({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
     </div>
   )

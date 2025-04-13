@@ -37,6 +37,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter your username"
+          className="dark:bg-gray-800 dark:text-white"
         />
       </div>
 
@@ -48,10 +49,11 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter your password"
+          className="dark:bg-gray-800 dark:text-white"
         />
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
 
       <div className="pt-2">
         <Button type="submit" className="w-full">
@@ -59,7 +61,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
         </Button>
       </div>
 
-      <div className="text-xs text-gray-500 text-center pt-2">
+      <div className="text-xs text-gray-500 dark:text-gray-400 text-center pt-2">
         <p className="mb-1">For demo purposes:</p>
         <p>Admin login: admin / admin123</p>
         <p>User login: user / user123</p>

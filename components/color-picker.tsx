@@ -59,7 +59,7 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
           type="text"
           value={selectedColor}
           onChange={(e) => handleColorChange(e.target.value)}
-          className="flex-1 px-2 py-1 border rounded text-sm"
+          className="flex-1 px-2 py-1 border rounded text-sm dark:bg-gray-800 dark:text-white dark:border-gray-700"
         />
       </div>
     </div>

@@ -40,21 +40,21 @@ export function FurnitureControls({ item, onUpdate, onDelete }: FurnitureControl
   }
 
   return (
-    <Card className="w-96 shadow-lg">
+    <Card className="w-full max-w-96 shadow-lg">
       <CardContent className="p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="move" className="flex items-center gap-2">
               <Move className="h-4 w-4" />
-              <span>Move</span>
+              <span className="hidden sm:inline">Move</span>
             </TabsTrigger>
             <TabsTrigger value="rotate" className="flex items-center gap-2">
               <RotateCcw className="h-4 w-4" />
-              <span>Rotate</span>
+              <span className="hidden sm:inline">Rotate</span>
             </TabsTrigger>
             <TabsTrigger value="scale" className="flex items-center gap-2">
               <Maximize className="h-4 w-4" />
-              <span>Scale</span>
+              <span className="hidden sm:inline">Scale</span>
             </TabsTrigger>
           </TabsList>
 

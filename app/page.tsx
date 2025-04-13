@@ -1,13 +1,15 @@
 "use client"
 
-import { useState, useEffect, useRef, Suspense } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef, Suspense, useCallback } from "react"
 import { Canvas, useThree } from "@react-three/fiber"
 import { OrbitControls, Environment, Grid, ContactShadows } from "@react-three/drei"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Sofa, Table, Lamp, Save, Share, Undo, Redo, Download, Camera } from "lucide-react"
+import { ChevronLeft, ChevronRight, Sofa, Table, Lamp, Save, Undo, Redo, Download, Camera, Upload } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -64,10 +66,10 @@ interface SavedDesign {
 }
 
 // Component to capture screenshot
-function ScreenshotButton({ onClick }: { onClick: () => void }) {
+function ScreenshotButton({ onScreenshotTaken }: { onScreenshotTaken: (dataUrl: string) => void }) {
   const { gl, scene, camera } = useThree()
 
-  const takeScreenshot = () => {
+  useEffect(() => {
     // Render scene
     gl.render(scene, camera)
 
@@ -75,14 +77,8 @@ function ScreenshotButton({ onClick }: { onClick: () => void }) {
     const screenshot = gl.domElement.toDataURL("image/png")
 
     // Pass the screenshot data to the parent component
-    onClick()
-
-    // Create a link and trigger download
-    const link = document.createElement("a")
-    link.href = screenshot
-    link.download = `furniture-design-${new Date().toISOString().slice(0, 10)}.png`
-    link.click()
-  }
+    onScreenshotTaken(screenshot)
+  }, [gl, scene, camera, onScreenshotTaken])
 
   return null
 }
@@ -115,6 +111,9 @@ export default function FurnitureConfigurator() {
 
   // State for screenshot
   const [takingScreenshot, setTakingScreenshot] = useState(false)
+
+  // File input ref for import
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Toast notifications
   const { toast } = useToast()
@@ -340,7 +339,7 @@ export default function FurnitureConfigurator() {
     })
   }
 
-  // Export/Share function
+  // Export/Download function
   const exportDesign = () => {
     const currentState: AppState = {
       furniture: furnitureItems,
@@ -376,70 +375,120 @@ export default function FurnitureConfigurator() {
     })
   }
 
-  // Share function (copy to clipboard)
-  const shareDesign = () => {
-    const currentState: AppState = {
-      furniture: furnitureItems,
-      room: {
-        dimensions: roomDimensions,
-        wallColor,
-        floorColor,
-        floorPattern,
-        floorTextureScale,
-        floorTextureRotation,
-      },
-      selectedFurnitureId: null,
+  // Import function
+  const handleImport = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
     }
+  }
 
-    // Convert to base64 to make it more shareable
-    const stateString = JSON.stringify(currentState)
-    const base64State = btoa(stateString)
+  // Handle file selection for import
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-    // In a real app, this would be a shortened URL or a unique ID
-    // For this demo, we'll just copy the base64 to clipboard
-    navigator.clipboard
-      .writeText(base64State)
-      .then(() => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const importedState = JSON.parse(event.target?.result as string) as AppState
+
+        // Validate the imported state
+        if (!importedState.furniture || !importedState.room) {
+          throw new Error("Invalid design file format")
+        }
+
+        // Apply the imported state
+        setFurnitureItems(importedState.furniture)
+        setRoomDimensions(importedState.room.dimensions)
+        setWallColor(importedState.room.wallColor)
+        setFloorColor(importedState.room.floorColor)
+        setFloorPattern(importedState.room.floorPattern || "solid")
+        setFloorTextureScale(importedState.room.floorTextureScale || 1)
+        setFloorTextureRotation(importedState.room.floorTextureRotation || 0)
+
+        // Add to history
+        shouldAddToHistory.current = true
+
         toast({
-          title: "Design Copied",
-          description: "Design data copied to clipboard",
+          title: "Design Imported",
+          description: "Your design has been imported successfully",
         })
-      })
-      .catch((err) => {
+      } catch (error) {
         toast({
-          title: "Error",
-          description: "Failed to copy design data",
+          title: "Import Failed",
+          description: "The selected file is not a valid design file",
           variant: "destructive",
         })
-      })
+      }
+    }
+    reader.readAsText(file)
+
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   // Screenshot function
   const takeScreenshot = () => {
     setTakingScreenshot(true)
+  }
 
-    // The actual screenshot is taken by the ScreenshotButton component
-    // This is just to trigger the process
+  // Handle screenshot taken
+  const handleScreenshotTaken = useCallback(
+    (dataUrl: string) => {
+      // Create a link and trigger download
+      const link = document.createElement("a")
+      link.href = dataUrl
+      link.download = `furniture-design-${new Date().toISOString().slice(0, 10)}.png`
+      link.click()
 
-    setTimeout(() => {
       setTakingScreenshot(false)
+
       toast({
         title: "Screenshot Taken",
         description: "Your design has been saved as an image",
       })
-    }, 500)
-  }
+    },
+    [toast],
+  )
 
+  // Update the addFurniture function to provide better default scales for the new models
   const addFurniture = (type: string) => {
     shouldAddToHistory.current = true
+
+    // Set appropriate default positions and scales based on furniture type
+    let defaultPosition: [number, number, number] = [0, 0, 0]
+    let defaultScale: [number, number, number] = [1, 1, 1]
+
+    switch (type) {
+      case "sofa":
+        defaultPosition = [0, 0, 0]
+        defaultScale = [0.5, 0.5, 0.5]
+        break
+      case "table":
+        defaultPosition = [0, 0, 0]
+        defaultScale = [0.5, 0.5, 0.5]
+        break
+      case "chair":
+        defaultPosition = [0, 0, 0]
+        defaultScale = [0.5, 0.5, 0.5]
+        break
+      case "lamp":
+        defaultPosition = [0, 0, 0]
+        defaultScale = [0.5, 0.5, 0.5]
+        break
+    }
+
     const newItem = {
       id: `${type}-${Date.now()}`,
       type,
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
+      position: defaultPosition,
+      rotation: [0, 0, 0] as [number, number, number],
+      scale: defaultScale,
       color: "#8B4513",
     }
+
     setFurnitureItems([...furnitureItems, newItem])
     setSelectedFurniture(newItem.id)
   }
@@ -461,7 +510,7 @@ export default function FurnitureConfigurator() {
   // If not logged in, show login prompt
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar
           isLoggedIn={isLoggedIn}
           userRole={userRole}
@@ -473,10 +522,12 @@ export default function FurnitureConfigurator() {
           <Card className="w-full max-w-md">
             <CardContent className="pt-6">
               <h2 className="text-2xl font-bold text-center mb-6">Welcome to FurniCraft</h2>
-              <p className="text-center mb-6 text-gray-600">Please log in to use the furniture configurator</p>
+              <p className="text-center mb-6 text-gray-600 dark:text-gray-300">
+                Please log in to use the furniture configurator
+              </p>
               <div className="flex flex-col gap-4">
                 <Button onClick={() => setShowLogin(true)}>Log In</Button>
-                <div className="text-sm text-gray-500 text-center">
+                <div className="text-sm text-gray-500 dark:text-gray-300 text-center">
                   <p className="mb-1">For demo purposes:</p>
                   <p>Admin login: admin / admin123</p>
                   <p>User login: user / user123</p>
@@ -502,7 +553,7 @@ export default function FurnitureConfigurator() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-background">
       <Navbar
         isLoggedIn={isLoggedIn}
         userRole={userRole}
@@ -511,10 +562,12 @@ export default function FurnitureConfigurator() {
         activePage="home"
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
         {/* Sidebar */}
         <div
-          className={`bg-white border-r relative ${sidebarOpen ? "w-80" : "w-0"} transition-all duration-300 overflow-hidden`}
+          className={`bg-card border-r relative ${
+            sidebarOpen ? "h-auto md:w-80" : "h-0 md:w-0"
+          } transition-all duration-300 overflow-hidden ${sidebarOpen ? "border-b md:border-b-0" : ""}`}
         >
           <div className="p-4 h-full flex flex-col">
             <h1 className="text-2xl font-bold mb-6">Furniture Configurator</h1>
@@ -528,25 +581,37 @@ export default function FurnitureConfigurator() {
 
               <TabsContent value="furniture" className="flex-1 overflow-auto">
                 <div className="grid grid-cols-2 gap-3">
-                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("sofa")}>
+                  <Card
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => addFurniture("sofa")}
+                  >
                     <CardContent className="p-4 flex flex-col items-center">
                       <Sofa className="h-12 w-12 mb-2 text-gray-700" />
                       <span>Sofa</span>
                     </CardContent>
                   </Card>
-                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("table")}>
+                  <Card
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => addFurniture("table")}
+                  >
                     <CardContent className="p-4 flex flex-col items-center">
                       <Table className="h-12 w-12 mb-2 text-gray-700" />
                       <span>Table</span>
                     </CardContent>
                   </Card>
-                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("lamp")}>
+                  <Card
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => addFurniture("lamp")}
+                  >
                     <CardContent className="p-4 flex flex-col items-center">
                       <Lamp className="h-12 w-12 mb-2 text-gray-700" />
                       <span>Lamp</span>
                     </CardContent>
                   </Card>
-                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("chair")}>
+                  <Card
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => addFurniture("chair")}
+                  >
                     <CardContent className="p-4 flex flex-col items-center">
                       <div className="h-12 w-12 mb-2 text-gray-700 flex items-center justify-center">🪑</div>
                       <span>Chair</span>
@@ -565,7 +630,9 @@ export default function FurnitureConfigurator() {
                     />
                   </div>
                 ) : (
-                  <div className="text-center text-gray-500 mt-8">Select a furniture item to customize materials</div>
+                  <div className="text-center text-gray-500 dark:text-gray-300 mt-8">
+                    Select a furniture item to customize materials
+                  </div>
                 )}
               </TabsContent>
 
@@ -657,15 +724,21 @@ export default function FurnitureConfigurator() {
             </Tabs>
 
             <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
-              <Button variant="outline" size="icon" onClick={handleUndo} disabled={historyIndex <= 0}>
+              <Button variant="outline" size="icon" onClick={handleUndo} disabled={historyIndex <= 0} title="Undo">
                 <Undo className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRedo}
+                disabled={historyIndex >= history.length - 1}
+                title="Redo"
+              >
                 <Redo className="h-4 w-4" />
               </Button>
               <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" title="Save Design">
                     <Save className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
@@ -695,15 +768,24 @@ export default function FurnitureConfigurator() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <Button variant="outline" size="icon" onClick={shareDesign}>
-                <Share className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={exportDesign}>
+              <Button variant="outline" size="icon" onClick={exportDesign} title="Export Design">
                 <Download className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={takeScreenshot}>
+              <Button variant="outline" size="icon" onClick={handleImport} title="Import Design">
+                <Upload className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={takeScreenshot} title="Save as Image">
                 <Camera className="h-4 w-4" />
               </Button>
+
+              {/* Hidden file input for import */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".json"
+                style={{ display: "none" }}
+                onChange={handleFileSelect}
+              />
 
               {/* Admin-only buttons would go here */}
               {userRole === "admin" && (
@@ -719,10 +801,15 @@ export default function FurnitureConfigurator() {
           <Button
             variant="secondary"
             size="icon"
-            className="absolute -right-4 top-1/2 transform -translate-y-1/2 rounded-full shadow-md z-10"
+            className="absolute md:-right-4 md:top-1/2 bottom-0 right-0 md:bottom-auto md:transform md:-translate-y-1/2 rounded-full shadow-md z-10"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
-            {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {sidebarOpen ? (
+              <ChevronLeft className="h-4 w-4 hidden md:block" />
+            ) : (
+              <ChevronRight className="h-4 w-4 hidden md:block" />
+            )}
+            <span className="md:hidden">{sidebarOpen ? "Close" : "Open"} Controls</span>
           </Button>
         </div>
 
@@ -763,12 +850,12 @@ export default function FurnitureConfigurator() {
               <Environment preset="apartment" />
               <OrbitControls enableDamping dampingFactor={0.05} minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
 
-              {takingScreenshot && <ScreenshotButton onClick={() => setTakingScreenshot(false)} />}
+              {takingScreenshot && <ScreenshotButton onScreenshotTaken={handleScreenshotTaken} />}
             </Suspense>
           </Canvas>
 
           {selectedItem && (
-            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">
               <FurnitureControls
                 item={selectedItem}
                 onUpdate={(updates) => updateFurniture(selectedItem.id, updates)}
