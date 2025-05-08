@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Sofa, Table, Lamp, Save, Undo, Redo, Download, Camera, Upload } from "lucide-react"
+import { ChevronLeft, ChevronRight, Sofa, Table, Lamp, Armchair, Save, Undo, Redo, Download, Camera, Upload } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -580,40 +580,28 @@ export default function FurnitureConfigurator() {
               </TabsList>
 
               <TabsContent value="furniture" className="flex-1 overflow-auto">
-                <div className="grid grid-cols-2 gap-3">
-                  <Card
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                    onClick={() => addFurniture("sofa")}
-                  >
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("sofa")}> 
                     <CardContent className="p-4 flex flex-col items-center">
                       <Sofa className="h-12 w-12 mb-2 text-gray-700" />
                       <span>Sofa</span>
                     </CardContent>
                   </Card>
-                  <Card
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                    onClick={() => addFurniture("table")}
-                  >
+                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("table")}> 
                     <CardContent className="p-4 flex flex-col items-center">
                       <Table className="h-12 w-12 mb-2 text-gray-700" />
                       <span>Table</span>
                     </CardContent>
                   </Card>
-                  <Card
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                    onClick={() => addFurniture("lamp")}
-                  >
+                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("lamp")}> 
                     <CardContent className="p-4 flex flex-col items-center">
                       <Lamp className="h-12 w-12 mb-2 text-gray-700" />
                       <span>Lamp</span>
                     </CardContent>
                   </Card>
-                  <Card
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                    onClick={() => addFurniture("chair")}
-                  >
+                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("chair")}> 
                     <CardContent className="p-4 flex flex-col items-center">
-                      <div className="h-12 w-12 mb-2 text-gray-700 flex items-center justify-center">🪑</div>
+                      <Armchair className="h-12 w-12 mb-2 text-gray-700" />
                       <span>Chair</span>
                     </CardContent>
                   </Card>

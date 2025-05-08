@@ -62,11 +62,7 @@ export default function AboutPage() {
               </p>
             </div>
             <div className="md:w-1/2">
-              <img
-                src="/placeholder.svg?height=400&width=600"
-                alt="FurniCraft workshop"
-                className="rounded-lg shadow-lg w-full"
-              />
+              <img src="/images/about/workshop.jpg" alt="FurniCraft workshop" className="rounded-lg shadow-lg w-full" />
             </div>
           </div>
         </section>
@@ -144,24 +140,17 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold mb-6">Our Team</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { name: "Sarah Johnson", role: "Founder & CEO", image: "/placeholder.svg?height=300&width=300" },
-              { name: "Michael Chen", role: "Head of Design", image: "/placeholder.svg?height=300&width=300" },
-              {
-                name: "Elena Rodriguez",
-                role: "Chief Technology Officer",
-                image: "/placeholder.svg?height=300&width=300",
-              },
-              {
-                name: "David Kim",
-                role: "Customer Experience Director",
-                image: "/placeholder.svg?height=300&width=300",
-              },
+              { name: "Dinitha Wickramasinghe", image: "/images/about/team/dinitha.jpg" },
+              { name: "Ranawaka Perera", image: "/images/about/team/ranawaka.jpg" },
+              { name: "Mohammed Umair", image: "/images/about/team/umair.jpg" },
+              { name: "Kenula Andradi", image: "/images/about/team/kenula.jpg" },
+              { name: "Roshane Perera", image: "/images/about/team/roshane.jpg" },
+              { name: "Mathew Lakruwan", image: "/images/about/team/mathew.jpg" },
             ].map((member, index) => (
               <div key={index} className="bg-white rounded-lg overflow-hidden shadow-md text-center">
                 <img src={member.image || "/placeholder.svg"} alt={member.name} className="w-full h-64 object-cover" />
                 <div className="p-4">
                   <h3 className="text-xl font-semibold">{member.name}</h3>
-                  <p className="text-gray-600">{member.role}</p>
                 </div>
               </div>
             ))}
@@ -174,40 +163,6 @@ export default function AboutPage() {
           </Button>
         </div>
       </main>
-
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">FurniCraft</h3>
-              <p className="text-gray-300">Quality furniture for every home and office.</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <p className="text-gray-300">123 Furniture Lane</p>
-              <p className="text-gray-300">Design District, CA 90210</p>
-              <p className="text-gray-300">contact@furnicraft.com</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Instagram
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Facebook
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Twitter
-                </a>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-300">
-            <p>© 2023 FurniCraft. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

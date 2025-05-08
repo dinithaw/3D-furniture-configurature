@@ -44,7 +44,7 @@ export default function ProductsPage() {
       id: 1,
       name: "Modern Sofa",
       description: "A comfortable modern sofa with customizable fabric options.",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/images/products/modern_sofa.jpg",
       price: "$899",
       category: "Living Room",
     },
@@ -52,7 +52,7 @@ export default function ProductsPage() {
       id: 2,
       name: "Dining Table",
       description: "Elegant dining table with solid wood construction.",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/images/products/dining_table.jpg",
       price: "$649",
       category: "Dining Room",
     },
@@ -60,7 +60,7 @@ export default function ProductsPage() {
       id: 3,
       name: "Bedside Lamp",
       description: "Stylish lamp with adjustable brightness settings.",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/images/products/bedside_lamp.jpg",
       price: "$129",
       category: "Bedroom",
     },
@@ -68,7 +68,7 @@ export default function ProductsPage() {
       id: 4,
       name: "Office Chair",
       description: "Ergonomic chair with lumbar support and adjustable height.",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/images/products/office_chair.jpg",
       price: "$349",
       category: "Office",
     },
@@ -76,7 +76,7 @@ export default function ProductsPage() {
       id: 5,
       name: "Coffee Table",
       description: "Modern coffee table with storage compartments.",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/images/products/coffee_table.jpg",
       price: "$299",
       category: "Living Room",
     },
@@ -84,7 +84,7 @@ export default function ProductsPage() {
       id: 6,
       name: "Bookshelf",
       description: "Spacious bookshelf with adjustable shelves.",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/images/products/book_shelf.jpg",
       price: "$249",
       category: "Living Room",
     },
@@ -232,40 +232,6 @@ export default function ProductsPage() {
           </div>
         )}
       </main>
-
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">FurniCraft</h3>
-              <p className="text-gray-300">Quality furniture for every home and office.</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <p className="text-gray-300">123 Furniture Lane</p>
-              <p className="text-gray-300">Design District, CA 90210</p>
-              <p className="text-gray-300">contact@furnicraft.com</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Instagram
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Facebook
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Twitter
-                </a>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-300">
-            <p>© 2023 FurniCraft. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

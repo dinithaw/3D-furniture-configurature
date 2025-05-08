@@ -27,6 +27,13 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  // Configure compiler options to work with React 19
+  compiler: {
+    // Disable compilation features that could conflict with React 19
+    reactRemoveProperties: false,
+  },
+  // Ensure we can work with React 19
+  reactStrictMode: true,
 }
 
 if (userConfig) {
