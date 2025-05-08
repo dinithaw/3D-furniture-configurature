@@ -1,4 +1,4 @@
-// File: C:\Users\ramik\OneDrive\Documents\3rd Year\HCI\3d_furniture\app\products\page.tsx
+// File: C:\Users\moham\OneDrive\Desktop\HCI Coursework\3D-furniture-configurature\app\products\page.tsx
 import * as entry from '../../../../app/products/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
