@@ -15,6 +15,9 @@ interface FurnitureItem2D {
   rotation: number
   zIndex: number
   scale?: number // default 1
+  shadowEnabled?: boolean
+  shadowRotation?: number
+  shadowOpacity?: number
 }
 
 interface Canvas2DProps {
@@ -140,6 +143,26 @@ export default function Canvas2D({
       ctx.translate(item.x + (item.width * scale) / 2, item.y + (item.height * scale) / 2)
       ctx.rotate((item.rotation * Math.PI) / 180)
       ctx.scale(scale, scale)
+      // Draw custom shadow if enabled
+      if (item.shadowEnabled) {
+        ctx.save()
+        // Calculate shadow orbit around the base, but always at or below the bottom of the model
+        const angleRad = ((item.shadowRotation ?? 0) * Math.PI) / 180
+        // Orbit radius for shadow
+        const orbitRadius = item.height * 0.18
+        // Calculate offset, but clamp Y so shadow never goes above the base (never in front)
+        let shadowOffsetX = Math.cos(angleRad) * orbitRadius
+        let shadowOffsetY = Math.max(0, Math.sin(angleRad) * orbitRadius)
+        // Shadow length can be constant or slightly change for realism
+        const shadowLength = item.height * 0.10
+        ctx.globalAlpha = item.shadowOpacity ?? 0.3
+        ctx.fillStyle = '#222'
+        ctx.beginPath()
+        ctx.ellipse(shadowOffsetX, item.height * 0.45 + shadowOffsetY, item.width * 0.38, shadowLength, 0, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.globalAlpha = 1
+        ctx.restore()
+      }
       // Draw realistic furniture by type
       switch (item.type) {
         case "sofa": {

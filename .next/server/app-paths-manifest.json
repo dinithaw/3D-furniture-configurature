@@ -1,5 +1,8 @@
 {
-  "/products/page": "app/products/page.js",
-  "/page": "app/page.js",
-  "/3d/page": "app/3d/page.js"
+  "/3d/page": "app/3d/page.js",
+  "/3d/upload/page": "app/3d/upload/page.js",
+  "/canvas/page": "app/canvas/page.js",
+  "/setup/page": "app/setup/page.js",
+  "/gallery/page": "app/gallery/page.js",
+  "/page": "app/page.js"
 }

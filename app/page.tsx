@@ -79,7 +79,7 @@ export default function HomePage() {
         <div ref={sliderRef} className="keen-slider h-full w-full">
           <div className="keen-slider__slide relative">
             <div className="absolute inset-0 bg-black/40 z-10" />
-            <div className="h-full w-full bg-[url('/images/hero/hero2.jpg')] bg-cover bg-center" />
+            <div className="h-full w-full bg-[url('/images/hero/hero.jpg')] bg-cover bg-center" />
             <div className="absolute inset-0 z-20 flex items-center justify-center">
               <div className="text-center max-w-3xl px-6">
                 <motion.h1 
@@ -397,46 +397,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-neutral-900 text-white py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-xl font-semibold mb-4">FurniCraft</h3>
-              <p className="text-gray-400">Transform your space with our innovative furniture design tools.</p>
-            </div>
-            <div>
-              <h4 className="text-lg font-medium mb-4">Tools</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><button className="hover:text-white" onClick={() => router.push("/canvas")}>2D Designer</button></li>
-                <li><button className="hover:text-white" onClick={() => router.push("/3d")}>3D Designer</button></li>
-                <li><button className="hover:text-white" onClick={() => router.push("/setup")}>Setup Guide</button></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-medium mb-4">Products</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><button className="hover:text-white" onClick={() => router.push("/products")}>All Products</button></li>
-                <li><button className="hover:text-white" onClick={() => router.push("/products/living")}>Living Room</button></li>
-                <li><button className="hover:text-white" onClick={() => router.push("/products/dining")}>Dining</button></li>
-                <li><button className="hover:text-white" onClick={() => router.push("/products/bedroom")}>Bedroom</button></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-medium mb-4">Contact</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><button className="hover:text-white" onClick={() => router.push("/about")}>About Us</button></li>
-                <li><button className="hover:text-white" onClick={() => router.push("/contact")}>Contact</button></li>
-                <li><button className="hover:text-white" onClick={() => router.push("/support")}>Support</button></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-10 pt-6 text-center text-gray-500">
-            <p>&copy; {new Date().getFullYear()} FurniCraft. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

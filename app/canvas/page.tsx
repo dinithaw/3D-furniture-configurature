@@ -26,6 +26,9 @@ interface FurnitureItem2D {
   rotation: number
   zIndex: number
   scale?: number
+  shadowEnabled?: boolean
+  shadowRotation?: number
+  shadowOpacity?: number
 }
 
 export default function Canvas2DPage() {
@@ -114,6 +117,10 @@ export default function Canvas2DPage() {
       color: type === "sofa" ? "#8B4513" : type === "table" ? "#A0522D" : "#FFD700",
       rotation: 0,
       zIndex: furnitureItems.length + 1,
+      scale: 1,
+      shadowEnabled: false,
+      shadowRotation: 0,
+      shadowOpacity: 0.3,
     }
 
     setFurnitureItems([...furnitureItems, newItem])
@@ -352,6 +359,67 @@ export default function Canvas2DPage() {
                             }}
                           />
                           <div className="text-right text-sm text-gray-500">{(selectedFurniture.scale ?? 1).toFixed(2)}x</div>
+                        </div>
+                        {/* Shadow controls */}
+                        <div className="space-y-2 pt-2">
+                          <Label>Shade/Shadow</Label>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Button
+                              variant={selectedFurniture.shadowEnabled ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setFurnitureItems(
+                                furnitureItems.map((item) =>
+                                  item.id === selectedFurniture.id
+                                    ? { ...item, shadowEnabled: !item.shadowEnabled }
+                                    : item,
+                                ),
+                              )}
+                            >
+                              {selectedFurniture.shadowEnabled ? "Remove Shade" : "Add Shade"}
+                            </Button>
+                          </div>
+                          {selectedFurniture.shadowEnabled && (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Shade Rotation</Label>
+                                <Slider
+                                  value={[selectedFurniture.shadowRotation ?? 0]}
+                                  min={0}
+                                  max={360}
+                                  step={1}
+                                  onValueChange={(value) =>
+                                    setFurnitureItems(
+                                      furnitureItems.map((item) =>
+                                        item.id === selectedFurniture.id
+                                          ? { ...item, shadowRotation: value[0] }
+                                          : item,
+                                      ),
+                                    )
+                                  }
+                                />
+                                <div className="text-right text-sm text-gray-500">{selectedFurniture.shadowRotation ?? 0}°</div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Shade Opacity</Label>
+                                <Slider
+                                  value={[selectedFurniture.shadowOpacity ?? 0.3]}
+                                  min={0}
+                                  max={1}
+                                  step={0.01}
+                                  onValueChange={(value) =>
+                                    setFurnitureItems(
+                                      furnitureItems.map((item) =>
+                                        item.id === selectedFurniture.id
+                                          ? { ...item, shadowOpacity: value[0] }
+                                          : item,
+                                      ),
+                                    )
+                                  }
+                                />
+                                <div className="text-right text-sm text-gray-500">{((selectedFurniture.shadowOpacity ?? 0.3) * 100).toFixed(0)}%</div>
+                              </div>
+                            </>
+                          )}
                         </div>
                         <Button
                           variant="destructive"

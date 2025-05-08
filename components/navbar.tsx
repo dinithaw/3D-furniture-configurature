@@ -68,6 +68,17 @@ export default function Navbar({ isLoggedIn, userRole, onLoginClick, onLogout, a
                   3D Designer
                 </Link>
               </li>
+              {/* Show Upload Furniture only for admin */}
+              {userRole === "admin" && (
+                <li>
+                  <Link
+                    href="/3d/upload"
+                    className={`${activePage === "upload" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600`}
+                  >
+                    Upload Furniture
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/about"
@@ -171,6 +182,18 @@ export default function Navbar({ isLoggedIn, userRole, onLoginClick, onLogout, a
                   3D Designer
                 </Link>
               </li>
+              {/* Show Upload Furniture only for admin */}
+              {userRole === "admin" && (
+                <li>
+                  <Link
+                    href="/3d/upload"
+                    className={`${activePage === "upload" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600 block`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Upload Furniture
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/about"
