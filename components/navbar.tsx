@@ -62,6 +62,14 @@ export default function Navbar({ isLoggedIn, userRole, onLoginClick, onLogout, a
               </li>
               <li>
                 <Link
+                  href="/3d"
+                  className={`${activePage === "3d" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600`}
+                >
+                  3D Designer
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/about"
                   className={`${activePage === "about" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600`}
                 >
@@ -152,6 +160,15 @@ export default function Navbar({ isLoggedIn, userRole, onLoginClick, onLogout, a
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   2D Designer
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/3d"
+                  className={`${activePage === "3d" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600 block`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  3D Designer
                 </Link>
               </li>
               <li>
