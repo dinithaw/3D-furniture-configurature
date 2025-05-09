@@ -33,7 +33,7 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
   const [modelError, setModelError] = useState(false)
 
   // Load the appropriate model based on item type
-  const { scene: modelScene, error } = useGLTF(`/models/${item.type}.glb`, undefined, undefined, (error) => {
+  const { scene: modelScene } = useGLTF(`/models/${item.type}.glb`, undefined, undefined, (error) => {
     console.error(`Error loading model: ${error}`)
     setModelError(true)
   })
@@ -42,7 +42,7 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
   const [model, setModel] = useState<THREE.Group | null>(null)
 
   useEffect(() => {
-    if (modelScene && !error) {
+    if (modelScene) {
       try {
         // Clone the model scene
         const clonedModel = modelScene.clone(true)
@@ -66,7 +66,7 @@ export default function FurnitureItem({ item, isSelected, onClick, onUpdate }: F
         setModelError(true)
       }
     }
-  }, [modelScene, item.color, error])
+  }, [modelScene, item.color])
 
   // Apply the item's scale to the model scale
   const modelScale: [number, number, number] = item.scale

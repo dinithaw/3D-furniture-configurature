@@ -14,6 +14,10 @@ interface FurnitureItem2D {
   color: string
   rotation: number
   zIndex: number
+  scale?: number // default 1
+  shadowEnabled?: boolean
+  shadowRotation?: number
+  shadowOpacity?: number
 }
 
 interface Canvas2DProps {
@@ -25,6 +29,14 @@ interface Canvas2DProps {
   selectedFurnitureId: string | null
   onSelectFurniture: (id: string | null) => void
   onMoveFurniture: (id: string, x: number, y: number) => void
+  onUpdateFurniture?: (id: string, updates: Partial<FurnitureItem2D>) => void
+}
+
+// Add scale property to FurnitureItem2D interface
+declare global {
+  interface FurnitureItem2D {
+    scale?: number // default 1
+  }
 }
 
 export default function Canvas2D({
@@ -36,6 +48,7 @@ export default function Canvas2D({
   selectedFurnitureId,
   onSelectFurniture,
   onMoveFurniture,
+  onUpdateFurniture,
 }: Canvas2DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -46,6 +59,17 @@ export default function Canvas2D({
 
   // Load background image
   const backgroundImageObj = useRef<HTMLImageElement | null>(null)
+
+  // State for image zoom and pan
+  const [imgZoom, setImgZoom] = useState(1)
+  const [imgPan, setImgPan] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const [imgPanStart, setImgPanStart] = useState({ x: 0, y: 0 })
+
+  // Touch support for pan and pinch-to-zoom
+  const lastTouchDist = useRef<number | null>(null)
+  const lastTouchCenter = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (backgroundImage) {
@@ -59,6 +83,12 @@ export default function Canvas2D({
       backgroundImageObj.current = null
       drawCanvas()
     }
+  }, [backgroundImage])
+
+  // Reset zoom/pan when image changes
+  useEffect(() => {
+    setImgZoom(1)
+    setImgPan({ x: 0, y: 0 })
   }, [backgroundImage])
 
   // Draw the canvas
@@ -79,26 +109,26 @@ export default function Canvas2D({
     // Draw background image if available
     if (backgroundImageObj.current) {
       const img = backgroundImageObj.current
-      // Calculate dimensions to maintain aspect ratio and cover the canvas
+      // Calculate scale to fit the entire image within the canvas (contain)
       const imgRatio = img.width / img.height
       const canvasRatio = width / height
 
-      let drawWidth,
-        drawHeight,
-        offsetX = 0,
-        offsetY = 0
-
+      let drawWidth, drawHeight
       if (imgRatio > canvasRatio) {
-        // Image is wider than canvas (relative to height)
-        drawHeight = height
-        drawWidth = height * imgRatio
-        offsetX = (width - drawWidth) / 2
-      } else {
-        // Image is taller than canvas (relative to width)
         drawWidth = width
         drawHeight = width / imgRatio
-        offsetY = (height - drawHeight) / 2
+      } else {
+        drawHeight = height
+        drawWidth = height * imgRatio
       }
+
+      // Apply zoom
+      drawWidth *= imgZoom
+      drawHeight *= imgZoom
+
+      // Centered position with pan
+      const offsetX = (width - drawWidth) / 2 + imgPan.x
+      const offsetY = (height - drawHeight) / 2 + imgPan.y
 
       ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
     }
@@ -109,106 +139,311 @@ export default function Canvas2D({
     // Draw furniture
     sortedFurniture.forEach((item) => {
       ctx.save()
-
-      // Translate to the center of the item for rotation
-      ctx.translate(item.x + item.width / 2, item.y + item.height / 2)
+      const scale = item.scale ?? 1
+      ctx.translate(item.x + (item.width * scale) / 2, item.y + (item.height * scale) / 2)
       ctx.rotate((item.rotation * Math.PI) / 180)
-
-      // Draw the item
-      ctx.fillStyle = item.color
-
-      // Draw different shapes based on furniture type
+      ctx.scale(scale, scale)
+      // Draw custom shadow if enabled
+      if (item.shadowEnabled) {
+        ctx.save()
+        // Calculate shadow orbit around the base, but always at or below the bottom of the model
+        const angleRad = ((item.shadowRotation ?? 0) * Math.PI) / 180
+        // Orbit radius for shadow
+        const orbitRadius = item.height * 0.18
+        // Calculate offset, but clamp Y so shadow never goes above the base (never in front)
+        let shadowOffsetX = Math.cos(angleRad) * orbitRadius
+        let shadowOffsetY = Math.max(0, Math.sin(angleRad) * orbitRadius)
+        // Shadow length can be constant or slightly change for realism
+        const shadowLength = item.height * 0.10
+        ctx.globalAlpha = item.shadowOpacity ?? 0.3
+        ctx.fillStyle = '#222'
+        ctx.beginPath()
+        ctx.ellipse(shadowOffsetX, item.height * 0.45 + shadowOffsetY, item.width * 0.38, shadowLength, 0, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.globalAlpha = 1
+        ctx.restore()
+      }
+      // Draw realistic furniture by type
       switch (item.type) {
-        case "sofa":
-          // Draw sofa
-          ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height)
-
-          // Draw sofa back
-          ctx.fillStyle = adjustColor(item.color, -20)
-          ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height / 3)
-
-          // Draw sofa arms
-          ctx.fillRect(-item.width / 2, -item.height / 2, item.width / 8, item.height)
-          ctx.fillRect(item.width / 2 - item.width / 8, -item.height / 2, item.width / 8, item.height)
-          break
-
-        case "table":
-          // Draw table top
-          ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height)
-
-          // Draw table legs
-          ctx.fillStyle = adjustColor(item.color, -30)
-          const legWidth = item.width / 10
-          const legHeight = item.height / 10
-
-          // Top-left leg
-          ctx.fillRect(-item.width / 2, -item.height / 2, legWidth, legHeight)
-          // Top-right leg
-          ctx.fillRect(item.width / 2 - legWidth, -item.height / 2, legWidth, legHeight)
-          // Bottom-left leg
-          ctx.fillRect(-item.width / 2, item.height / 2 - legHeight, legWidth, legHeight)
-          // Bottom-right leg
-          ctx.fillRect(item.width / 2 - legWidth, item.height / 2 - legHeight, legWidth, legHeight)
-          break
-
-        case "lamp":
-          // Draw lamp base
-          ctx.fillStyle = adjustColor(item.color, -20)
+        case "sofa": {
+          // Realistic sofa: gradients, highlights, subtle shadow, plush look
+          const sofaW = item.width
+          const sofaH = item.height
+          // --- SHADOW ---
+          ctx.globalAlpha = 0.10
+          ctx.fillStyle = '#222'
           ctx.beginPath()
-          ctx.arc(0, item.height / 4, item.width / 4, 0, Math.PI * 2)
+          ctx.ellipse(0, sofaH * 0.43, sofaW * 0.36, sofaH * 0.07, 0, 0, Math.PI * 2)
           ctx.fill()
-
-          // Draw lamp pole
-          ctx.fillStyle = adjustColor(item.color, -10)
-          ctx.fillRect(-item.width / 16, -item.height / 4, item.width / 8, item.height / 2)
-
-          // Draw lamp shade
-          ctx.fillStyle = item.color
+          ctx.globalAlpha = 1
+          // --- BACK CUSHIONS ---
+          const backCushionW = sofaW * 0.39
+          const backCushionH = sofaH * 0.32
+          const backCushionR = sofaH * 0.09
+          const backCushionY = -sofaH * 0.28
+          const backCushionGap = sofaW * 0.02
+          // Left back cushion gradient
+          let grad = ctx.createLinearGradient(0, backCushionY, 0, backCushionY + backCushionH)
+          grad.addColorStop(0, adjustColor(item.color, 30))
+          grad.addColorStop(1, adjustColor(item.color, -10))
+          ctx.fillStyle = grad
           ctx.beginPath()
-          ctx.arc(0, -item.height / 4, item.width / 3, 0, Math.PI * 2)
+          ctx.moveTo(-backCushionW - backCushionGap/2 + backCushionR, backCushionY)
+          ctx.lineTo(-backCushionGap/2 + backCushionW - backCushionR, backCushionY)
+          ctx.quadraticCurveTo(-backCushionGap/2 + backCushionW, backCushionY, -backCushionGap/2 + backCushionW, backCushionY + backCushionR)
+          ctx.lineTo(-backCushionGap/2 + backCushionW, backCushionY + backCushionH - backCushionR)
+          ctx.quadraticCurveTo(-backCushionGap/2 + backCushionW, backCushionY + backCushionH, -backCushionGap/2 + backCushionW - backCushionR, backCushionY + backCushionH)
+          ctx.lineTo(-backCushionW - backCushionGap/2 + backCushionR, backCushionY + backCushionH)
+          ctx.quadraticCurveTo(-backCushionW - backCushionGap/2, backCushionY + backCushionH, -backCushionW - backCushionGap/2, backCushionY + backCushionH - backCushionR)
+          ctx.lineTo(-backCushionW - backCushionGap/2, backCushionY + backCushionR)
+          ctx.quadraticCurveTo(-backCushionW - backCushionGap/2, backCushionY, -backCushionW - backCushionGap/2 + backCushionR, backCushionY)
+          ctx.closePath()
           ctx.fill()
-          break
-
-        case "chair":
-          // Draw chair seat
-          ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height / 2)
-
-          // Draw chair back
-          ctx.fillStyle = adjustColor(item.color, -15)
-          ctx.fillRect(-item.width / 2, -item.height / 2, item.width / 4, item.height)
-
-          // Draw chair legs
+          // Left back cushion highlight
+          ctx.globalAlpha = 0.18
+          ctx.fillStyle = '#fff'
+          ctx.beginPath()
+          ctx.ellipse(-sofaW*0.19, backCushionY + backCushionH*0.18, backCushionW*0.32, backCushionH*0.18, 0, Math.PI*1.1, Math.PI*1.9)
+          ctx.fill()
+          ctx.globalAlpha = 1
+          // Right back cushion gradient
+          grad = ctx.createLinearGradient(0, backCushionY, 0, backCushionY + backCushionH)
+          grad.addColorStop(0, adjustColor(item.color, 30))
+          grad.addColorStop(1, adjustColor(item.color, -10))
+          ctx.fillStyle = grad
+          ctx.beginPath()
+          ctx.moveTo(backCushionGap/2 + backCushionR, backCushionY)
+          ctx.lineTo(backCushionGap/2 + backCushionW - backCushionR, backCushionY)
+          ctx.quadraticCurveTo(backCushionGap/2 + backCushionW, backCushionY, backCushionGap/2 + backCushionW, backCushionY + backCushionR)
+          ctx.lineTo(backCushionGap/2 + backCushionW, backCushionY + backCushionH - backCushionR)
+          ctx.quadraticCurveTo(backCushionGap/2 + backCushionW, backCushionY + backCushionH, backCushionGap/2 + backCushionW - backCushionR, backCushionY + backCushionH)
+          ctx.lineTo(backCushionGap/2 + backCushionR, backCushionY + backCushionH)
+          ctx.quadraticCurveTo(backCushionGap/2, backCushionY + backCushionH, backCushionGap/2, backCushionY + backCushionH - backCushionR)
+          ctx.lineTo(backCushionGap/2, backCushionY + backCushionR)
+          ctx.quadraticCurveTo(backCushionGap/2, backCushionY, backCushionGap/2 + backCushionR, backCushionY)
+          ctx.closePath()
+          ctx.fill()
+          // Right back cushion highlight
+          ctx.globalAlpha = 0.18
+          ctx.fillStyle = '#fff'
+          ctx.beginPath()
+          ctx.ellipse(sofaW*0.19, backCushionY + backCushionH*0.18, backCushionW*0.32, backCushionH*0.18, 0, Math.PI*1.1, Math.PI*1.9)
+          ctx.fill()
+          ctx.globalAlpha = 1
+          // --- SEAT CUSHION ---
+          const seatW = sofaW * 0.8
+          const seatH = sofaH * 0.19
+          const seatR = sofaH * 0.09
+          const seatY = 0
+          grad = ctx.createLinearGradient(0, seatY, 0, seatY + seatH)
+          grad.addColorStop(0, adjustColor(item.color, 20))
+          grad.addColorStop(1, adjustColor(item.color, -15))
+          ctx.fillStyle = grad
+          ctx.beginPath()
+          ctx.moveTo(-seatW/2 + seatR, seatY)
+          ctx.lineTo(seatW/2 - seatR, seatY)
+          ctx.quadraticCurveTo(seatW/2, seatY, seatW/2, seatY + seatR)
+          ctx.lineTo(seatW/2, seatY + seatH - seatR)
+          ctx.quadraticCurveTo(seatW/2, seatY + seatH, seatW/2 - seatR, seatY + seatH)
+          ctx.lineTo(-seatW/2 + seatR, seatY + seatH)
+          ctx.quadraticCurveTo(-seatW/2, seatY + seatH, -seatW/2, seatY + seatH - seatR)
+          ctx.lineTo(-seatW/2, seatY + seatR)
+          ctx.quadraticCurveTo(-seatW/2, seatY, -seatW/2 + seatR, seatY)
+          ctx.closePath()
+          ctx.fill()
+          // Seat highlight
+          ctx.globalAlpha = 0.13
+          ctx.fillStyle = '#fff'
+          ctx.beginPath()
+          ctx.ellipse(0, seatY + seatH*0.25, seatW*0.38, seatH*0.18, 0, Math.PI*1.1, Math.PI*1.9)
+          ctx.fill()
+          ctx.globalAlpha = 1
+          // --- ARMRESTS ---
+          const armW = sofaW * 0.13, armH = sofaH * 0.32, armR = sofaH * 0.09
+          const armY = -sofaH * 0.02
+          grad = ctx.createLinearGradient(0, armY, 0, armY + armH)
+          grad.addColorStop(0, adjustColor(item.color, 10))
+          grad.addColorStop(1, adjustColor(item.color, -20))
+          // Left armrest
+          ctx.fillStyle = grad
+          ctx.beginPath()
+          ctx.moveTo(-sofaW/2 + armR, armY)
+          ctx.lineTo(-sofaW/2 + armW - armR, armY)
+          ctx.quadraticCurveTo(-sofaW/2 + armW, armY, -sofaW/2 + armW, armY + armR)
+          ctx.lineTo(-sofaW/2 + armW, armY + armH - armR)
+          ctx.quadraticCurveTo(-sofaW/2 + armW, armY + armH, -sofaW/2 + armW - armR, armY + armH)
+          ctx.lineTo(-sofaW/2 + armR, armY + armH)
+          ctx.quadraticCurveTo(-sofaW/2, armY + armH, -sofaW/2, armY + armH - armR)
+          ctx.lineTo(-sofaW/2, armY + armR)
+          ctx.quadraticCurveTo(-sofaW/2, armY, -sofaW/2 + armR, armY)
+          ctx.closePath()
+          ctx.fill()
+          // Right armrest
+          ctx.beginPath()
+          ctx.moveTo(sofaW/2 - armW + armR, armY)
+          ctx.lineTo(sofaW/2 - armR, armY)
+          ctx.quadraticCurveTo(sofaW/2, armY, sofaW/2, armY + armR)
+          ctx.lineTo(sofaW/2, armY + armH - armR)
+          ctx.quadraticCurveTo(sofaW/2, armY + armH, sofaW/2 - armR, armY + armH)
+          ctx.lineTo(sofaW/2 - armW + armR, armY + armH)
+          ctx.quadraticCurveTo(sofaW/2 - armW, armY + armH, sofaW/2 - armW, armY + armH - armR)
+          ctx.lineTo(sofaW/2 - armW, armY + armR)
+          ctx.quadraticCurveTo(sofaW/2 - armW, armY, sofaW/2 - armW + armR, armY)
+          ctx.closePath()
+          ctx.fill()
+          // --- FEET ---
+          const footW = sofaW * 0.045, footH = sofaH * 0.06, footR = footW/2
+          const footY = sofaH * 0.36
           ctx.fillStyle = adjustColor(item.color, -30)
-          const chairLegWidth = item.width / 16
-
-          // Front-left leg
-          ctx.fillRect(-item.width / 2 + item.width / 8, 0, chairLegWidth, item.height / 2)
-          // Front-right leg
-          ctx.fillRect(item.width / 2 - item.width / 8 - chairLegWidth, 0, chairLegWidth, item.height / 2)
-          // Back-left leg
-          ctx.fillRect(-item.width / 2, 0, chairLegWidth, item.height / 2)
-          // Back-right leg
-          ctx.fillRect(-item.width / 2 + item.width / 4 - chairLegWidth, 0, chairLegWidth, item.height / 2)
+          // Left foot
+          ctx.beginPath()
+          ctx.moveTo(-sofaW/2 + armW/2 - footW/2 + footR, footY)
+          ctx.lineTo(-sofaW/2 + armW/2 + footW/2 - footR, footY)
+          ctx.quadraticCurveTo(-sofaW/2 + armW/2 + footW/2, footY, -sofaW/2 + armW/2 + footW/2, footY + footR)
+          ctx.lineTo(-sofaW/2 + armW/2 + footW/2, footY + footH - footR)
+          ctx.quadraticCurveTo(-sofaW/2 + armW/2 + footW/2, footY + footH, -sofaW/2 + armW/2 + footW/2 - footR, footY + footH)
+          ctx.lineTo(-sofaW/2 + armW/2 - footW/2 + footR, footY + footH)
+          ctx.quadraticCurveTo(-sofaW/2 + armW/2 - footW/2, footY + footH, -sofaW/2 + armW/2 - footW/2, footY + footH - footR)
+          ctx.lineTo(-sofaW/2 + armW/2 - footW/2, footY + footR)
+          ctx.quadraticCurveTo(-sofaW/2 + armW/2 - footW/2, footY, -sofaW/2 + armW/2 - footW/2 + footR, footY)
+          ctx.closePath()
+          ctx.fill()
+          // Right foot
+          ctx.beginPath()
+          ctx.moveTo(sofaW/2 - armW/2 - footW/2 + footR, footY)
+          ctx.lineTo(sofaW/2 - armW/2 + footW/2 - footR, footY)
+          ctx.quadraticCurveTo(sofaW/2 - armW/2 + footW/2, footY, sofaW/2 - armW/2 + footW/2, footY + footR)
+          ctx.lineTo(sofaW/2 - armW/2 + footW/2, footY + footH - footR)
+          ctx.quadraticCurveTo(sofaW/2 - armW/2 + footW/2, footY + footH, sofaW/2 - armW/2 + footW/2 - footR, footY + footH)
+          ctx.lineTo(sofaW/2 - armW/2 - footW/2 + footR, footY + footH)
+          ctx.quadraticCurveTo(sofaW/2 - armW/2 - footW/2, footY + footH, sofaW/2 - armW/2 - footW/2, footY + footH - footR)
+          ctx.lineTo(sofaW/2 - armW/2 - footW/2, footY + footR)
+          ctx.quadraticCurveTo(sofaW/2 - armW/2 - footW/2, footY, sofaW/2 - armW/2 - footW/2 + footR, footY)
+          ctx.closePath()
+          ctx.fill()
+          // --- BASE BAR ---
+          ctx.strokeStyle = adjustColor(item.color, -40)
+          ctx.lineWidth = sofaH * 0.025
+          ctx.lineCap = "round"
+          ctx.beginPath()
+          ctx.moveTo(-sofaW*0.19, footY + footH*1.1)
+          ctx.lineTo(sofaW*0.19, footY + footH*1.1)
+          ctx.stroke()
           break
-
+        }
+        case "table": {
+          // Table: tabletop, legs, shadow, highlight
+          // Shadow
+          ctx.globalAlpha = 0.15
+          ctx.fillStyle = "#222"
+          ctx.beginPath()
+          ctx.ellipse(0, item.height * 0.6, item.width * 0.45, item.height * 0.09, 0, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.globalAlpha = 1
+          // Tabletop
+          const tableTopGrad = ctx.createLinearGradient(-item.width/2, -item.height*0.1, item.width/2, item.height*0.1)
+          tableTopGrad.addColorStop(0, adjustColor(item.color, 20))
+          tableTopGrad.addColorStop(1, adjustColor(item.color, -10))
+          ctx.fillStyle = tableTopGrad
+          ctx.fillRect(-item.width / 2, -item.height * 0.1, item.width, item.height * 0.18)
+          // Highlight
+          ctx.globalAlpha = 0.18
+          ctx.fillStyle = "#fff"
+          ctx.fillRect(-item.width/2, -item.height*0.1, item.width, item.height*0.04)
+          ctx.globalAlpha = 1
+          // Legs
+          ctx.fillStyle = adjustColor(item.color, -30)
+          const legW = item.width * 0.08, legH = item.height * 0.5
+          ctx.fillRect(-item.width / 2 + legW*0.2, item.height * 0.08, legW, legH)
+          ctx.fillRect(item.width / 2 - legW*1.2, item.height * 0.08, legW, legH)
+          ctx.fillRect(-item.width / 2 + legW*0.2, item.height * 0.08 + legH, legW, legH * 0.15)
+          ctx.fillRect(item.width / 2 - legW*1.2, item.height * 0.08 + legH, legW, legH * 0.15)
+          break
+        }
+        case "lamp": {
+          // Lamp: base, pole, shade, bulb, shadow
+          // Shadow
+          ctx.globalAlpha = 0.13
+          ctx.fillStyle = "#222"
+          ctx.beginPath()
+          ctx.ellipse(0, item.height * 0.48, item.width * 0.13, item.height * 0.05, 0, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.globalAlpha = 1
+          // Base
+          ctx.fillStyle = adjustColor(item.color, -40)
+          ctx.beginPath()
+          ctx.ellipse(0, item.height * 0.45, item.width * 0.15, item.height * 0.05, 0, 0, Math.PI * 2)
+          ctx.fill()
+          // Pole
+          ctx.fillStyle = "#888"
+          ctx.fillRect(-item.width * 0.02, 0, item.width * 0.04, item.height * 0.4)
+          // Shade
+          const lampShadeGrad = ctx.createLinearGradient(-item.width*0.2, 0, item.width*0.2, -item.height*0.3)
+          lampShadeGrad.addColorStop(0, adjustColor(item.color, 10))
+          lampShadeGrad.addColorStop(1, adjustColor(item.color, -10))
+          ctx.fillStyle = lampShadeGrad
+          ctx.beginPath()
+          ctx.moveTo(-item.width * 0.2, 0)
+          ctx.lineTo(item.width * 0.2, 0)
+          ctx.lineTo(item.width * 0.12, -item.height * 0.3)
+          ctx.lineTo(-item.width * 0.12, -item.height * 0.3)
+          ctx.closePath()
+          ctx.fill()
+          // Bulb
+          ctx.globalAlpha = 0.7
+          ctx.fillStyle = "#fffbe6"
+          ctx.beginPath()
+          ctx.arc(0, -item.height*0.28, item.width*0.04, 0, Math.PI*2)
+          ctx.fill()
+          ctx.globalAlpha = 1
+          break
+        }
+        case "chair": {
+          // Chair: seat, backrest, legs, shadow, highlight
+          // Shadow
+          ctx.globalAlpha = 0.15
+          ctx.fillStyle = "#222"
+          ctx.beginPath()
+          ctx.ellipse(0, item.height * 0.32, item.width * 0.22, item.height * 0.07, 0, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.globalAlpha = 1
+          // Seat
+          const seatGrad = ctx.createLinearGradient(-item.width*0.25, 0, item.width*0.25, item.height*0.18)
+          seatGrad.addColorStop(0, adjustColor(item.color, 10))
+          seatGrad.addColorStop(1, adjustColor(item.color, -10))
+          ctx.fillStyle = seatGrad
+          ctx.fillRect(-item.width * 0.25, 0, item.width * 0.5, item.height * 0.18)
+          // Backrest
+          const backGrad = ctx.createLinearGradient(-item.width*0.25, -item.height*0.4, item.width*0.25, -item.height*0.22)
+          backGrad.addColorStop(0, adjustColor(item.color, 30))
+          backGrad.addColorStop(1, adjustColor(item.color, 0))
+          ctx.fillStyle = backGrad
+          ctx.fillRect(-item.width * 0.25, -item.height * 0.4, item.width * 0.5, item.height * 0.18)
+          // Legs
+          ctx.fillStyle = adjustColor(item.color, -30)
+          const legWc = item.width * 0.07, legHc = item.height * 0.35
+          ctx.fillRect(-item.width * 0.22, item.height * 0.18, legWc, legHc)
+          ctx.fillRect(item.width * 0.15, item.height * 0.18, legWc, legHc)
+          // Highlight
+          ctx.globalAlpha = 0.13
+          ctx.fillStyle = "#fff"
+          ctx.fillRect(-item.width * 0.25, 0, item.width * 0.5, item.height * 0.04)
+          ctx.globalAlpha = 1
+          break
+        }
         default:
-          // Default rectangle
+          ctx.fillStyle = item.color
           ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height)
       }
-
-      // Draw selection outline if selected
       if (item.id === selectedFurnitureId) {
         ctx.strokeStyle = "#2563eb"
         ctx.lineWidth = 2
         ctx.strokeRect(-item.width / 2 - 2, -item.height / 2 - 2, item.width + 4, item.height + 4)
-
-        // Draw rotation handle
         ctx.fillStyle = "#2563eb"
         ctx.beginPath()
         ctx.arc(0, -item.height / 2 - 15, 5, 0, Math.PI * 2)
         ctx.fill()
       }
-
       ctx.restore()
     })
   }
@@ -404,6 +639,90 @@ export default function Canvas2D({
 
   const handleTouchEnd = () => {
     setIsDragging(false)
+  }
+
+  // Mouse wheel for zoom
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    let newZoom = imgZoom - e.deltaY * 0.001
+    newZoom = Math.max(0.1, Math.min(5, newZoom))
+    setImgZoom(newZoom)
+  }
+
+  // Mouse down for pan
+  const handlePanStart = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsPanning(true)
+    setPanStart({ x: e.clientX, y: e.clientY })
+    setImgPanStart(imgPan)
+  }
+
+  // Mouse move for pan
+  const handlePanMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isPanning) return
+    const dx = e.clientX - panStart.x
+    const dy = e.clientY - panStart.y
+    setImgPan({ x: imgPanStart.x + dx, y: imgPanStart.y + dy })
+  }
+
+  // Mouse up to end pan
+  const handlePanEnd = () => {
+    setIsPanning(false)
+  }
+
+  // Touch support for pan and pinch-to-zoom
+  const handleTouchStartAdvanced = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      // Single finger pan
+      setIsPanning(true)
+      setPanStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })
+      setImgPanStart(imgPan)
+    } else if (e.touches.length === 2) {
+      // Pinch to zoom
+      setIsPanning(false)
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      lastTouchDist.current = Math.sqrt(dx * dx + dy * dy)
+      lastTouchCenter.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      }
+    }
+  }
+
+  const handleTouchMoveAdvanced = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1 && isPanning) {
+      // Pan
+      const dx = e.touches[0].clientX - panStart.x
+      const dy = e.touches[0].clientY - panStart.y
+      setImgPan({ x: imgPanStart.x + dx, y: imgPanStart.y + dy })
+    } else if (e.touches.length === 2 && lastTouchDist.current !== null) {
+      // Pinch to zoom
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const scale = dist / lastTouchDist.current
+      let newZoom = imgZoom * scale
+      newZoom = Math.max(0.1, Math.min(5, newZoom))
+      setImgZoom(newZoom)
+      lastTouchDist.current = dist
+      // Optionally, update pan to keep center fixed
+    }
+  }
+
+  const handleTouchEndAdvanced = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    setIsPanning(false)
+    if (e.touches.length < 2) {
+      lastTouchDist.current = null
+      lastTouchCenter.current = null
+    }
+  }
+
+  // UI button handlers
+  const handleZoomIn = () => setImgZoom((z) => Math.min(5, z * 1.1))
+  const handleZoomOut = () => setImgZoom((z) => Math.max(0.1, z / 1.1))
+  const handleResetView = () => {
+    setImgZoom(1)
+    setImgPan({ x: 0, y: 0 })
   }
 
   return (

@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
-import { Sofa, Table, Lamp, Save, Download, Trash2, Square, RectangleVerticalIcon as Rectangle } from "lucide-react"
+import { Sofa, Table, Lamp, Save, Download, Trash2, Square, RectangleVerticalIcon as Rectangle, Armchair } from "lucide-react"
 import ColorPicker from "@/components/color-picker"
 import Canvas2D from "@/components/canvas-2d"
 
@@ -25,6 +25,10 @@ interface FurnitureItem2D {
   color: string
   rotation: number
   zIndex: number
+  scale?: number
+  shadowEnabled?: boolean
+  shadowRotation?: number
+  shadowOpacity?: number
 }
 
 export default function Canvas2DPage() {
@@ -87,12 +91,12 @@ export default function Canvas2DPage() {
     if (file) {
       const reader = new FileReader()
       reader.onload = (event) => {
-        const img = new Image()
+        const img = new window.Image()
         img.onload = () => {
           setBackgroundImage(event.target?.result as string)
           toast({
             title: "Image Uploaded",
-            description: "Background image has been set",
+            description: "Background image has been set.",
           })
         }
         img.src = event.target?.result as string
@@ -113,6 +117,10 @@ export default function Canvas2DPage() {
       color: type === "sofa" ? "#8B4513" : type === "table" ? "#A0522D" : "#FFD700",
       rotation: 0,
       zIndex: furnitureItems.length + 1,
+      scale: 1,
+      shadowEnabled: false,
+      shadowRotation: 0,
+      shadowOpacity: 0.3,
     }
 
     setFurnitureItems([...furnitureItems, newItem])
@@ -299,7 +307,7 @@ export default function Canvas2DPage() {
                       </Card>
                       <Card className="cursor-pointer hover:bg-gray-50" onClick={() => addFurniture("chair")}>
                         <CardContent className="p-4 flex flex-col items-center">
-                          <div className="h-12 w-12 mb-2 text-gray-700 flex items-center justify-center">🪑</div>
+                          <Armchair className="h-12 w-12 mb-2 text-gray-700" />
                           <span>Chair</span>
                         </CardContent>
                       </Card>
@@ -333,6 +341,85 @@ export default function Canvas2DPage() {
                             }}
                           />
                           <div className="text-right text-sm text-gray-500">{selectedFurniture.rotation}°</div>
+                        </div>
+                        {/* Scale slider */}
+                        <div className="space-y-2">
+                          <Label>Scale</Label>
+                          <Slider
+                            value={[selectedFurniture.scale ?? 1]}
+                            min={0.5}
+                            max={3}
+                            step={0.01}
+                            onValueChange={(value) => {
+                              setFurnitureItems(
+                                furnitureItems.map((item) =>
+                                  item.id === selectedFurniture.id ? { ...item, scale: value[0] } : item,
+                                ),
+                              )
+                            }}
+                          />
+                          <div className="text-right text-sm text-gray-500">{(selectedFurniture.scale ?? 1).toFixed(2)}x</div>
+                        </div>
+                        {/* Shadow controls */}
+                        <div className="space-y-2 pt-2">
+                          <Label>Shade/Shadow</Label>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Button
+                              variant={selectedFurniture.shadowEnabled ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setFurnitureItems(
+                                furnitureItems.map((item) =>
+                                  item.id === selectedFurniture.id
+                                    ? { ...item, shadowEnabled: !item.shadowEnabled }
+                                    : item,
+                                ),
+                              )}
+                            >
+                              {selectedFurniture.shadowEnabled ? "Remove Shade" : "Add Shade"}
+                            </Button>
+                          </div>
+                          {selectedFurniture.shadowEnabled && (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Shade Rotation</Label>
+                                <Slider
+                                  value={[selectedFurniture.shadowRotation ?? 0]}
+                                  min={0}
+                                  max={360}
+                                  step={1}
+                                  onValueChange={(value) =>
+                                    setFurnitureItems(
+                                      furnitureItems.map((item) =>
+                                        item.id === selectedFurniture.id
+                                          ? { ...item, shadowRotation: value[0] }
+                                          : item,
+                                      ),
+                                    )
+                                  }
+                                />
+                                <div className="text-right text-sm text-gray-500">{selectedFurniture.shadowRotation ?? 0}°</div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Shade Opacity</Label>
+                                <Slider
+                                  value={[selectedFurniture.shadowOpacity ?? 0.3]}
+                                  min={0}
+                                  max={1}
+                                  step={0.01}
+                                  onValueChange={(value) =>
+                                    setFurnitureItems(
+                                      furnitureItems.map((item) =>
+                                        item.id === selectedFurniture.id
+                                          ? { ...item, shadowOpacity: value[0] }
+                                          : item,
+                                      ),
+                                    )
+                                  }
+                                />
+                                <div className="text-right text-sm text-gray-500">{((selectedFurniture.shadowOpacity ?? 0.3) * 100).toFixed(0)}%</div>
+                              </div>
+                            </>
+                          )}
                         </div>
                         <Button
                           variant="destructive"
@@ -369,40 +456,6 @@ export default function Canvas2DPage() {
           </div>
         </div>
       </main>
-
-      <footer className="bg-gray-800 text-white py-8 mt-8">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">FurniCraft</h3>
-              <p className="text-gray-300">Quality furniture for every home and office.</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <p className="text-gray-300">123 Furniture Lane</p>
-              <p className="text-gray-300">Design District, CA 90210</p>
-              <p className="text-gray-300">contact@furnicraft.com</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Instagram
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Facebook
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  Twitter
-                </a>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-300">
-            <p>© 2023 FurniCraft. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

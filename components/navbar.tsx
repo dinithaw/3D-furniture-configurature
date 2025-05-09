@@ -22,9 +22,7 @@ export default function Navbar({ isLoggedIn, userRole, onLoginClick, onLogout, a
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-700 rounded-md flex items-center justify-center text-white font-bold text-xl">
-              FC
-            </div>
+            <img src="/logo.png" alt="FurniCraft logo" className="w-10 h-10 rounded-md object-cover" />
             <span className="text-xl font-bold">FurniCraft</span>
           </Link>
 
@@ -62,6 +60,25 @@ export default function Navbar({ isLoggedIn, userRole, onLoginClick, onLogout, a
                   2D Designer
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/3d"
+                  className={`${activePage === "3d" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600`}
+                >
+                  3D Designer
+                </Link>
+              </li>
+              {/* Show Upload Furniture only for admin */}
+              {userRole === "admin" && (
+                <li>
+                  <Link
+                    href="/3d/upload"
+                    className={`${activePage === "upload" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600`}
+                  >
+                    Upload Furniture
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/about"
@@ -156,6 +173,27 @@ export default function Navbar({ isLoggedIn, userRole, onLoginClick, onLogout, a
                   2D Designer
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/3d"
+                  className={`${activePage === "3d" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600 block`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  3D Designer
+                </Link>
+              </li>
+              {/* Show Upload Furniture only for admin */}
+              {userRole === "admin" && (
+                <li>
+                  <Link
+                    href="/3d/upload"
+                    className={`${activePage === "upload" ? "text-amber-600 font-medium" : "text-foreground"} hover:text-amber-600 block`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Upload Furniture
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/about"
