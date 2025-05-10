@@ -1,0 +1,183 @@
+{
+  "furniture": [
+    {
+      "id": "1",
+      "name": "Modern Sofa",
+      "description": "A comfortable modern sofa with customizable fabric options.",
+      "image": "/images/products/modern_sofa.jpg",
+      "price": 899.99,
+      "category": "Living Room",
+      "model": "/models/sofa.glb",
+      "thumbnail": "/images/products/modern_sofa.jpg"
+    },
+    {
+      "id": "2",
+      "name": "Dining Table",
+      "description": "Elegant dining table for 4-6 people.",
+      "image": "/images/products/dining_table.jpg",
+      "price": 499.99,
+      "category": "Dining Room",
+      "model": "/models/table.glb",
+      "thumbnail": "/images/products/dining_table.jpg"
+    },
+    {
+      "id": "3",
+      "name": "Accent Chair",
+      "description": "Stylish accent chair for any room.",
+      "image": "/images/products/office_chair.jpg",
+      "price": 249.99,
+      "category": "Living Room",
+      "model": "/models/chair.glb",
+      "thumbnail": "/images/products/office_chair.jpg"
+    },
+    {
+      "id": "4",
+      "name": "Bed Side Lamp",
+      "description": "Modern lamp with adjustable brightness.",
+      "image": "/images/products/bedside_lamp.jpg",
+      "price": 89.99,
+      "category": "Bedroom",
+      "model": "/models/lamp.glb",
+      "thumbnail": "/images/products/bedside_lamp.jpg"
+    },
+    {
+      "id": "d67c"
+    },
+    {
+      "id": "d8d3",
+      "name": "Bookshelf",
+      "type": "storage",
+      "price": 199.99,
+      "description": "Spacious bookshelf with 5 shelves",
+      "model": "/models/bookshelf.glb",
+      "thumbnail": "/thumbnails/bookshelf.png"
+    }
+  ],
+  "users": [
+    {
+      "id": "1",
+      "email": "test@example.com",
+      "password": "password123",
+      "name": "Test User",
+      "role": "user"
+    },
+    {
+      "id": "2",
+      "email": "admin@example.com",
+      "password": "admin123",
+      "name": "Admin User",
+      "role": "admin"
+    }
+  ],
+  "favorites": [
+    {
+      "id": "1",
+      "userId": 1,
+      "furnitureId": 2
+    }
+  ],
+  "cart": [
+    {
+      "id": "1",
+      "userId": 1,
+      "furnitureId": 3,
+      "quantity": 2
+    }
+  ],
+  "auth": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InVzZXIiLCJpYXQiOjE2ODMwMDAwMDB9.8Ew8LQufzPat1zL4jLwLMHbHlXzTIwL-_hz_nHU91c4"
+  },
+  "login": [
+    {
+      "id": "1",
+      "email": "test@example.com",
+      "password": "password123",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InVzZXIiLCJpYXQiOjE2ODMwMDAwMDB9.8Ew8LQufzPat1zL4jLwLMHbHlXzTIwL-_hz_nHU91c4"
+    },
+    {
+      "id": "2",
+      "email": "admin@example.com",
+      "password": "admin123",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6ImFkbWluIiwiaWF0IjoxNjgzMDAwMDAwfQ.S-RHG2zMdIQAogUjiVTZ5J4IW4R1NEJ6ZUxg-iy4Ang"
+    },
+    {
+      "id": "1068",
+      "email": "test@example.com",
+      "password": "password123"
+    }
+  ],
+  "3dmodels": [
+    {
+      "id": "1",
+      "name": "Sofa",
+      "path": "/models/sofa.glb",
+      "thumbnail": "/images/products/modern_sofa.jpg",
+      "category": "Living Room"
+    },
+    {
+      "id": "2",
+      "name": "Table",
+      "path": "/models/table.glb",
+      "thumbnail": "/images/products/dining_table.jpg",
+      "category": "Dining Room"
+    },
+    {
+      "id": "3",
+      "name": "Chair",
+      "path": "/models/chair.glb",
+      "thumbnail": "/images/products/office_chair.jpg",
+      "category": "Living Room"
+    },
+    {
+      "id": "4",
+      "name": "Lamp",
+      "path": "/models/lamp.glb",
+      "thumbnail": "/images/products/bedside_lamp.jpg",
+      "category": "Bedroom"
+    }
+  ],
+  "configurations": [
+    {
+      "id": "1",
+      "userId": 1,
+      "name": "My Living Room",
+      "furniture": [
+        {
+          "modelId": 1,
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "color": "#8B4513"
+        },
+        {
+          "modelId": 3,
+          "position": {
+            "x": 2,
+            "y": 0,
+            "z": 1
+          },
+          "rotation": {
+            "x": 0,
+            "y": 45,
+            "z": 0
+          },
+          "color": "#1E90FF"
+        }
+      ],
+      "roomSize": {
+        "width": 5,
+        "length": 6,
+        "height": 3
+      },
+      "floorTexture": "wood",
+      "wallColor": "#F5F5F5"
+    }
+  ]
+}
